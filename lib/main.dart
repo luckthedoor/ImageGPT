@@ -127,9 +127,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _handleImageSelection() async {
     final result = await ImagePicker().pickImage(
-      imageQuality: 70,
-      maxWidth: 1440,
-      source: ImageSource.gallery,
+      //imageQuality: 70,
+      //maxWidth: 1440,
+      source: ImageSource.camera,
     );
 
     if (result != null) {
