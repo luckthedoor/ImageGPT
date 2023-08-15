@@ -45,6 +45,9 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) => Scaffold(
         body: Chat(
+          theme: MediaQuery.of(context).platformBrightness == Brightness.light
+              ? const DefaultChatTheme()
+              : const DarkChatTheme(),
           messages: _messages,
           onAttachmentPressed: _handleAttachmentPressed,
           onMessageTap: _handleMessageTap,
