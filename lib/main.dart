@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
+import 'package:http/http.dart' show Client;
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:open_filex/open_filex.dart';
@@ -41,6 +42,56 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final List<types.Message> _messages = [];
   final _user = const types.User(id: '82091008-a484-4a89-ae75-a22bf8d6f3ac');
+  late int idValue = 0;
+  late String question = '';
+  late String answerStr = '';
+
+  void _makequest() async {
+    var url = Uri.parse('http://3.113.1.111/makequest');
+    var response = await http.post(
+      url,
+      body: {
+        "token": "token",
+      },
+    );
+    Map<String, dynamic> jsonMap = json.decode(response.body);
+
+    idValue = jsonMap["id"];
+
+    print(response.body);
+    print('Extracted ID: $idValue');
+  }
+
+  void _postimage(int id, String token, List<int> bytes) async {
+    var url = Uri.parse('http://3.113.1.111/postimage');
+    var request = http.MultipartRequest('POST', url);
+    final httpImage =
+        http.MultipartFile.fromBytes('image', bytes, filename: 'myImage.png');
+    request.files.add(httpImage);
+    request.fields["id"] = id.toString();
+    request.fields["token"] = token;
+    final response = await request.send();
+    print('Response status: ${response.statusCode}');
+  }
+
+  void _quest(int id, String token, String question) async {
+    var url = Uri.parse('http://3.113.1.111/quest');
+    var response = await http.post(
+      url,
+      body: {
+        "id": id.toString(),
+        "token": token,
+        "question": question,
+      },
+    );
+    print('Response status: ${response.statusCode}');
+    print(response.body);
+
+    Map<String, dynamic> jsonMap = json.decode(response.body);
+
+    answerStr = jsonMap["answer"];
+    print(answerStr);
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -147,7 +198,10 @@ class _MyHomePageState extends State<MyHomePage> {
         width: image.width.toDouble(),
       );
 
+      _makequest();
+      print(idValue);
       _addMessage(message);
+      _postimage(idValue, 'token', bytes);
     }
   }
 
@@ -217,7 +271,18 @@ class _MyHomePageState extends State<MyHomePage> {
       id: randomString(),
       text: message.text,
     );
+    question = message.text;
 
+    _quest(idValue, 'token', question);
     _addMessage(textMessage);
+
+    final textAnswer = types.TextMessage(
+      author: _user,
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+      id: randomString(),
+      text: answerStr,
+    );
+
+    _addMessage(textAnswer);
   }
 }
