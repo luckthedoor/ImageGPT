@@ -117,12 +117,12 @@ class _MyHomePageState extends State<MyHomePage> {
       context: context,
       builder: (BuildContext context) => SafeArea(
         child: SizedBox(
-          height: 80,
+          height: 90,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               const SizedBox(
-                height: 10,
+                height: 17,
               ),
               TextButton(
                 onPressed: () {
