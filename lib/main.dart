@@ -60,6 +60,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _postimage(String token, List<int> bytes) async {
+    var headers = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE, HEAD",
+    };
+
     var url = Uri.parse('http://3.113.1.111/postimage');
     var request = http.MultipartRequest('POST', url);
     final httpImage =
@@ -67,6 +72,7 @@ class _MyHomePageState extends State<MyHomePage> {
     request.files.add(httpImage);
     request.fields["id"] = ids[0].toString();
     request.fields["token"] = token;
+    request.headers.addAll(headers);
     final response = await request.send();
     print('Response status: ${response.statusCode}');
   }
