@@ -2,11 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
-import 'package:http/http.dart' show Client;
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:open_filex/open_filex.dart';
@@ -42,9 +40,9 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final List<types.Message> _messages = [];
   final _user = const types.User(id: '82091008-a484-4a89-ae75-a22bf8d6f3ac');
-  late int idValue = 0;
-  late String question = '';
-  late String answerStr = '';
+
+  final List<int> ids = [0];
+  final List<String> answers = [""];
 
   void _makequest() async {
     var url = Uri.parse('http://3.113.1.111/makequest');
@@ -56,30 +54,29 @@ class _MyHomePageState extends State<MyHomePage> {
     );
     Map<String, dynamic> jsonMap = json.decode(response.body);
 
-    idValue = jsonMap["id"];
+    ids[0] = jsonMap["id"];
 
     print(response.body);
-    print('Extracted ID: $idValue');
   }
 
-  void _postimage(int id, String token, List<int> bytes) async {
+  void _postimage(String token, List<int> bytes) async {
     var url = Uri.parse('http://3.113.1.111/postimage');
     var request = http.MultipartRequest('POST', url);
     final httpImage =
         http.MultipartFile.fromBytes('image', bytes, filename: 'myImage.png');
     request.files.add(httpImage);
-    request.fields["id"] = id.toString();
+    request.fields["id"] = ids[0].toString();
     request.fields["token"] = token;
     final response = await request.send();
     print('Response status: ${response.statusCode}');
   }
 
-  void _quest(int id, String token, String question) async {
+  Future<String> _quest(String token, String question) async {
     var url = Uri.parse('http://3.113.1.111/quest');
     var response = await http.post(
       url,
       body: {
-        "id": id.toString(),
+        "id": ids[0].toString(),
         "token": token,
         "question": question,
       },
@@ -87,10 +84,11 @@ class _MyHomePageState extends State<MyHomePage> {
     print('Response status: ${response.statusCode}');
     print(response.body);
 
-    Map<String, dynamic> jsonMap = json.decode(response.body);
+    Map<String, dynamic> jsonMap = json.decode(utf8.decode(response.bodyBytes));
 
-    answerStr = jsonMap["answer"];
-    print(answerStr);
+    final answer = jsonMap["answer"];
+
+    return answer;
   }
 
   @override
@@ -119,10 +117,13 @@ class _MyHomePageState extends State<MyHomePage> {
       context: context,
       builder: (BuildContext context) => SafeArea(
         child: SizedBox(
-          height: 144,
+          height: 80,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
+              const SizedBox(
+                height: 10,
+              ),
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
@@ -130,24 +131,26 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
                 child: const Align(
                   alignment: AlignmentDirectional.centerStart,
-                  child: Text('Photo'),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _handleFileSelection();
-                },
-                child: const Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text('File'),
+                  child: Text(
+                    'Photo',
+                    style: TextStyle(
+                      fontSize: 25,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
                 ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Align(
                   alignment: AlignmentDirectional.centerStart,
-                  child: Text('Cancel'),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 25,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -155,25 +158,6 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
-  }
-
-  void _handleFileSelection() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.any,
-    );
-
-    if (result != null && result.files.single.path != null) {
-      final message = types.FileMessage(
-        author: _user,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        id: randomString(),
-        name: result.files.single.name,
-        size: result.files.single.size,
-        uri: result.files.single.path!,
-      );
-
-      _addMessage(message);
-    }
   }
 
   void _handleImageSelection() async {
@@ -199,9 +183,8 @@ class _MyHomePageState extends State<MyHomePage> {
       );
 
       _makequest();
-      print(idValue);
       _addMessage(message);
-      _postimage(idValue, 'token', bytes);
+      _postimage('token', bytes);
     }
   }
 
@@ -264,23 +247,28 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _handleSendPressed(types.PartialText message) {
+  void _handleSendPressed(types.PartialText message) async {
     final textMessage = types.TextMessage(
       author: _user,
       createdAt: DateTime.now().millisecondsSinceEpoch,
       id: randomString(),
       text: message.text,
     );
-    question = message.text;
+    String question = message.text;
 
-    _quest(idValue, 'token', question);
+    final answer = await _quest('token', question);
     _addMessage(textMessage);
 
+    print(ids[0]);
+    print(answer);
+
+    const machine = types.User(id: 'machine');
+
     final textAnswer = types.TextMessage(
-      author: _user,
+      author: machine,
       createdAt: DateTime.now().millisecondsSinceEpoch,
       id: randomString(),
-      text: answerStr,
+      text: answer.toString(),
     );
 
     _addMessage(textAnswer);
